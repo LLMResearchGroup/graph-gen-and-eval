@@ -4,8 +4,9 @@ def read_paths(file_path):
     with open(file_path) as f:
         content = f.readlines()
         # take every third line and convert to list
-        all_paths = content[::3]
-        all_paths = [x.strip().split(',') for x in all_paths]
+        # content = content[::3]
+        # for new processed data, take every line
+        all_paths = [x.strip().split(',') for x in content]
         # convert each node from ascii to number
         all_paths = [[int(x) for x in path] for path in all_paths]
     return all_paths
@@ -55,9 +56,17 @@ def get_pairs_f1_score(rec_path, paths):
     return f1_calculator(rec_path_set, paths_set)
 
 rec_path = [10, 11]
-all_paths = read_paths('processed_data/Edin_traj.txt')
+all_paths = read_paths('processed_data/Edin.txt')
 paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
 score_f1 = get_f1_score(rec_path, paths)
 print(score_f1)
 score_pairs_f1 = get_pairs_f1_score(rec_path, paths)
 print(score_pairs_f1)
+
+# og_paths = read_paths('processed_data/Edin_og.txt')
+# new_paths = read_paths('processed_data/Edin.txt')
+# # compare them to see if they are the same
+# for og_path, new_path in zip(og_paths, new_paths):
+#     if og_path != new_path:
+#         print(og_path)
+#         print(new_path)
