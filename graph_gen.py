@@ -1,0 +1,161 @@
+import random
+import networkx
+import numpy as np
+from enum import Enum
+
+class GraphPrompt(Enum):
+    Basic = 1
+    Build_A_Graph = 2
+
+def reverse_delete(
+    Graph: networkx.classes.graph.Graph, delete_amount: int
+) -> networkx.classes.graph.Graph:
+    # Type validity
+    if not isinstance(Graph, networkx.classes.graph.Graph) or not isinstance(
+        delete_amount, int
+    ):
+        raise TypeError(
+            "Graph must be a networkx.classes.graph.Graph and delete_amount must be an int"
+        )
+
+    # Check if the graph is connected
+    if not networkx.is_connected(Graph):
+        raise ValueError("Graph must be connected")
+
+    # Check if the amount of edge is larger than the delete amount
+    if len(Graph.edges()) < delete_amount:
+        raise ValueError("Delete amount must be smaller than the amount of edges")
+
+    # Delete Edges: reverse-delete algorithm
+    # Reference: https://en.wikipedia.org/wiki/Reverse-delete_algorithm
+    for _ in range(delete_amount):
+        while True:
+            e = random.choice(list(Graph.edges()))
+            Graph.remove_edge(*e)
+            if networkx.is_connected(Graph):
+                break
+            Graph.add_edge(*e)
+
+
+# important for prompt engineering
+# description of the graph should be chosen carefully
+def describe_graph(graph: networkx.classes.graph.Graph, prompt: GraphPrompt = GraphPrompt.Basic) -> str:
+    # Type validity
+    if not isinstance(graph, networkx.classes.graph.Graph):
+        raise TypeError("Graph must be a networkx.classes.graph.Graph")
+
+    # Basic Prompting
+    if prompt == GraphPrompt.Basic:
+        nodes = list(graph.nodes())
+        nodes_str = " ".join(f"{node}" for node in nodes)
+
+        edges = list(graph.edges())
+        edges_str = " ".join([f"{edge[0]}-{edge[1]}" for edge in edges])
+
+        description = f"There is a graph with {len(nodes)} nodes {nodes_str}.\nThe edges are {edges_str}"
+        return description
+
+    # Build a graph Prompting
+    # Reference: 
+    # Can Language Models Solve Graph Problems in Natural Language
+    # Heng Wang et al.
+    # Cite: arXiv:2305.10037 [cs.CL]
+    # Link: https://arxiv.org/pdf/2305.10037.pdf
+    elif prompt == GraphPrompt.Build_A_Graph:
+        nodes = list(graph.nodes())
+        num_nodes = len(nodes)
+        nodes_str = f"numbered from 0 to {num_nodes - 1}"
+
+        edges = list(graph.edges(data=True))
+        edges_str = ""
+        for edge in edges:
+            source, target, weight = edge[0], edge[1], edge[2].get('weight', '')
+            edges_str += f"an edge between node {source} and node {target}"
+            if weight:
+                edges_str += f" with weight {weight}"
+            edges_str += ", "
+
+        description = f"In an undirected graph, the nodes are {nodes_str}, and the edges are:\n{edges_str[:-2]}\nLet's construct a graph with the nodes and edges first."
+        return description
+    
+    else:
+        raise ValueError("Prompt not supported")
+
+def generate_graph(node_number: int, edge_number: int) -> networkx.classes.graph.Graph:
+    # Type validity
+    if not isinstance(node_number, int) or not isinstance(edge_number, int):
+        raise TypeError("Node number and edge number must be int")
+
+    # Check if the node and edge number are valid
+    if node_number < 2 or edge_number < 1:
+        raise ValueError(
+            "Node number must be larger than 1 and edge number must be larger than 0"
+        )
+
+    # Check if the edge number is larger than the maximum edge number
+    if edge_number > node_number * (node_number - 1) // 2:
+        raise ValueError(
+            "Edge number must be smaller than the maximum edge number to be connected"
+        )
+
+    deletion_amount = node_number * (node_number - 1) // 2 - edge_number
+    Graph = networkx.complete_graph(node_number)
+    reverse_delete(Graph, deletion_amount)
+    return Graph
+
+
+def generate_randomly_distributed_path(
+    Graph: networkx.classes.graph.Graph, sample_size: int
+) -> dict:
+    # Type validity
+    if not isinstance(Graph, networkx.classes.graph.Graph) or not isinstance(
+        sample_size, int
+    ):
+        raise TypeError(
+            "Graph must be a networkx.classes.graph.Graph and sample_size must be an int"
+        )
+
+    # Check if the graph is connected
+    if not networkx.is_connected(Graph):
+        raise ValueError("Graph must be connected")
+
+    # Check if the sample size is valid
+    if sample_size < 1:
+        raise ValueError("Sample size must be larger than 0")
+
+    # Generate random frequencies and path lengths from a normal distribution
+    path_frequencies = [
+        max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
+    ]
+    path_lengths = [
+        max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
+    ]
+
+    # Generate random paths
+    return {
+        tuple(
+            list(
+                networkx.generate_random_paths(
+                    Graph, sample_size=1, path_length=path_lengths[i]
+                )
+            )[0]
+        ): path_frequencies[i]
+        for i in range(sample_size)
+    }
+
+
+# test
+node_number = 10  # Number of nodes
+edge_number = 20  # Number of edges
+deletion_amount = (
+    node_number * (node_number - 1) // 2 - edge_number
+)  # Number of edges to delete
+Graph = networkx.complete_graph(node_number)  # Create a complete graph
+reverse_delete(Graph, deletion_amount)
+print(describe_graph(Graph, GraphPrompt.Build_A_Graph))
+print(describe_graph(Graph, GraphPrompt.Basic))
+for path, frequency in generate_randomly_distributed_path(Graph, 5).items():
+    print(path, frequency)
+
+
+__all__ = ["generate_graph", "describe_graph", "GraphPrompt", "generate_randomly_distributed_path"]
