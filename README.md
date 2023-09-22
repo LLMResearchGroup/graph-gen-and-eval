@@ -1,14 +1,12 @@
-Virtual Environment Instruction
+***Virtual Environment Instruction***
 
-Make sure to see the config file to understand which packages are being used to run this project
+Config file Contains the version of python and virtualenv.
+Use `pip list` to generate the list of packages currently used.
 
-
-Package    Version
-
----
-
-networkx   3.1
-numpy      1.26.0
-pip        23.2.1
-setuptools 68.2.0
-wheel      0.41.2
+| Package    | Version |
+| ---------- | ------- |
+| networkx   | 3.1     |
+| numpy      | 1.26.0  |
+| pip        | 23.2.1  |
+| setuptools | 68.2.0  |
+| wheel      | 0.41.2  |
