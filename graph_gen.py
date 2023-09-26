@@ -1,3 +1,6 @@
+# path generation should accept a parameter for distribution
+# currently defaulted to normal distribution
+
 import random
 import networkx
 import numpy as np
@@ -97,6 +100,12 @@ def generate_graph(node_number: int, edge_number: int) -> networkx.classes.graph
         raise ValueError(
             "Edge number must be smaller than the maximum edge number to be connected"
         )
+        
+    # Check if edge number is larger than node_number - 1
+    if edge_number < node_number - 1:
+        raise ValueError(
+            "Edge number must be larget than the node number - 1 to be connected"
+        )
 
     deletion_amount = node_number * (node_number - 1) // 2 - edge_number
     Graph = networkx.complete_graph(node_number)
@@ -144,18 +153,19 @@ def generate_randomly_distributed_path(
     }
 
 
-# test
-node_number = 10  # Number of nodes
-edge_number = 20  # Number of edges
-deletion_amount = (
-    node_number * (node_number - 1) // 2 - edge_number
-)  # Number of edges to delete
-Graph = networkx.complete_graph(node_number)  # Create a complete graph
-reverse_delete(Graph, deletion_amount)
-print(describe_graph(Graph, GraphPrompt.Build_A_Graph))
-print(describe_graph(Graph, GraphPrompt.Basic))
-for path, frequency in generate_randomly_distributed_path(Graph, 5).items():
-    print(path, frequency)
+
+# # test
+# node_number = 10  # Number of nodes
+# edge_number = 20  # Number of edges
+# deletion_amount = (
+#     node_number * (node_number - 1) // 2 - edge_number
+# )  # Number of edges to delete
+# Graph = networkx.complete_graph(node_number)  # Create a complete graph
+# reverse_delete(Graph, deletion_amount)
+# print(describe_graph(Graph, GraphPrompt.Build_A_Graph))
+# print(describe_graph(Graph, GraphPrompt.Basic))
+# for path, frequency in generate_randomly_distributed_path(Graph, 5).items():
+#     print(path, frequency)
 
 
 __all__ = ["generate_graph", "describe_graph", "GraphPrompt", "generate_randomly_distributed_path"]
