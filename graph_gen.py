@@ -1,4 +1,3 @@
-# path generation should accept a parameter for distribution
 # currently defaulted to normal distribution
 
 import random
@@ -6,9 +5,16 @@ import networkx
 import numpy as np
 from enum import Enum
 
+
 class GraphPrompt(Enum):
     Basic = 1
     Build_A_Graph = 2
+
+
+class ProbabilityDistribution(Enum):
+    Normal = 1
+    Uniform = 2
+
 
 def reverse_delete(
     Graph: networkx.classes.graph.Graph, delete_amount: int
@@ -42,7 +48,9 @@ def reverse_delete(
 
 # important for prompt engineering
 # description of the graph should be chosen carefully
-def describe_graph(graph: networkx.classes.graph.Graph, prompt: GraphPrompt = GraphPrompt.Basic) -> str:
+def describe_graph(
+    graph: networkx.classes.graph.Graph, prompt: GraphPrompt = GraphPrompt.Basic
+) -> str:
     # Type validity
     if not isinstance(graph, networkx.classes.graph.Graph):
         raise TypeError("Graph must be a networkx.classes.graph.Graph")
@@ -59,7 +67,7 @@ def describe_graph(graph: networkx.classes.graph.Graph, prompt: GraphPrompt = Gr
         return description
 
     # Build a graph Prompting
-    # Reference: 
+    # Reference:
     # Can Language Models Solve Graph Problems in Natural Language
     # Heng Wang et al.
     # Cite: arXiv:2305.10037 [cs.CL]
@@ -72,7 +80,7 @@ def describe_graph(graph: networkx.classes.graph.Graph, prompt: GraphPrompt = Gr
         edges = list(graph.edges(data=True))
         edges_str = ""
         for edge in edges:
-            source, target, weight = edge[0], edge[1], edge[2].get('weight', '')
+            source, target, weight = edge[0], edge[1], edge[2].get("weight", "")
             edges_str += f"an edge between node {source} and node {target}"
             if weight:
                 edges_str += f" with weight {weight}"
@@ -80,9 +88,10 @@ def describe_graph(graph: networkx.classes.graph.Graph, prompt: GraphPrompt = Gr
 
         description = f"In an undirected graph, the nodes are {nodes_str}, and the edges are:\n{edges_str[:-2]}\nLet's construct a graph with the nodes and edges first."
         return description
-    
+
     else:
         raise ValueError("Prompt not supported")
+
 
 def generate_graph(node_number: int, edge_number: int) -> networkx.classes.graph.Graph:
     # Type validity
@@ -100,7 +109,7 @@ def generate_graph(node_number: int, edge_number: int) -> networkx.classes.graph
         raise ValueError(
             "Edge number must be smaller than the maximum edge number to be connected"
         )
-        
+
     # Check if edge number is larger than node_number - 1
     if edge_number < node_number - 1:
         raise ValueError(
@@ -114,14 +123,18 @@ def generate_graph(node_number: int, edge_number: int) -> networkx.classes.graph
 
 
 def generate_randomly_distributed_path(
-    Graph: networkx.classes.graph.Graph, sample_size: int
+    Graph: networkx.classes.graph.Graph,
+    sample_size: int,
+    distribution: ProbabilityDistribution = ProbabilityDistribution.Normal,
 ) -> dict:
     # Type validity
-    if not isinstance(Graph, networkx.classes.graph.Graph) or not isinstance(
-        sample_size, int
+    if (
+        not isinstance(Graph, networkx.classes.graph.Graph)
+        or not isinstance(sample_size, int)
+        or not isinstance(distribution, ProbabilityDistribution)
     ):
         raise TypeError(
-            "Graph must be a networkx.classes.graph.Graph and sample_size must be an int"
+            "Graph must be a networkx.classes.graph.Graph and sample_size must be an int and distribution must be a ProbabilityDistribution"
         )
 
     # Check if the graph is connected
@@ -133,12 +146,20 @@ def generate_randomly_distributed_path(
         raise ValueError("Sample size must be larger than 0")
 
     # Generate random frequencies and path lengths from a normal distribution
-    path_frequencies = [
-        max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
-    ]
-    path_lengths = [
-        max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
-    ]
+    if distribution == ProbabilityDistribution.Normal:
+        path_frequencies = [
+            max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
+        ]
+        path_lengths = [
+            max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
+        ]
+    elif distribution == ProbabilityDistribution.Uniform:
+        path_frequencies = [
+            max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
+        ]
+        path_lengths = [
+            max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
+        ]
 
     # Generate random paths
     return {
@@ -153,10 +174,9 @@ def generate_randomly_distributed_path(
     }
 
 
-
-# # test
-# node_number = 10  # Number of nodes
-# edge_number = 20  # Number of edges
+# test
+# node_number = 5  # Number of nodes
+# edge_number = 10  # Number of edges
 # deletion_amount = (
 #     node_number * (node_number - 1) // 2 - edge_number
 # )  # Number of edges to delete
@@ -164,8 +184,15 @@ def generate_randomly_distributed_path(
 # reverse_delete(Graph, deletion_amount)
 # print(describe_graph(Graph, GraphPrompt.Build_A_Graph))
 # print(describe_graph(Graph, GraphPrompt.Basic))
-# for path, frequency in generate_randomly_distributed_path(Graph, 5).items():
-#     print(path, frequency)
+# path_freq = generate_randomly_distributed_path(Graph, 20)
+# all_paths = [list(path) for path, freq in path_freq.items() for _ in range(freq)]
+# print(all_paths)
 
 
-__all__ = ["generate_graph", "describe_graph", "GraphPrompt", "generate_randomly_distributed_path"]
+__all__ = [
+    "generate_graph",
+    "describe_graph",
+    "GraphPrompt",
+    "generate_randomly_distributed_path",
+    "ProbabilityDistribution",
+]

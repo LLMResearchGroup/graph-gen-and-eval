@@ -6,67 +6,114 @@ from dotenv import load_dotenv
 from eval import *
 from graph_gen import *
 
-load_dotenv()
-openai.api_key = os.getenv("OPENAI")
-
-csv_file = open('eval_results.csv', 'w')
-csv_file.write('n_nodes, n_edges, f1_score, pairs_f1_score\n')
-
+# evaluation parameters
 n_nodes = [10, 12, 13, 17]
 n_edges = [20, 25, 30, 40]
+evaluation_ratio = 2  # number of paths generated for each edge
 
-# n_nodes = [5]
-# n_edges = [10]
+# necessary initialization
+csv_file = open("eval_results.csv", "w")
+csv_file.write("n_nodes, n_edges, f1_score, pairs_f1_score\n")
+load_dotenv()
+openai.api_key = os.getenv("OPENAI")
+log_file = open("log.txt", "a")
+
+
+# utility functions
+def generate_node_pair(number_of_nodes: int) -> tuple:
+    # Type validity
+    if not isinstance(number_of_nodes, int):
+        raise TypeError("number_of_nodes must be an int")
+
+    # Check if the number of nodes is valid
+    if number_of_nodes < 2:
+        raise ValueError("number_of_nodes must be larger than 1")
+
+    # Generate random node pairs
+    pair = (random.randint(0, number_of_nodes), random.randint(0, number_of_nodes))
+    while pair[0] == pair[1]:
+        pair = (random.randint(0, number_of_nodes), random.randint(0, number_of_nodes))
+    return pair
+
 
 for n_node, n_edge in zip(n_nodes, n_edges):
-    curr_graph = generate_graph(n_node, n_edge)
-    # print(describe_graph(curr_graph, GraphPrompt.Basic))
-
-    prompt1 = describe_graph(curr_graph, GraphPrompt.Build_A_Graph) + '\n'
-    path_freq = generate_randomly_distributed_path(curr_graph, n_edge*2)
+    graph = generate_graph(n_node, n_edge)
+    evaluation_prompt = describe_graph(graph, GraphPrompt.Build_A_Graph) + "\n"
+    evaluation_prompt += "Now, I will give you some historical paths.\n"
+    path_freq = generate_randomly_distributed_path(
+        graph, n_edge * evaluation_ratio, ProbabilityDistribution.Normal
+    )
     for path, freq in path_freq.items():
-        prompt1 += 'path: ' + str(path) + ' freq: ' + str(freq) + '\n'
-    
-    src = random.randint(0, (n_node) // 2)
-    dest = random.randint((n_node) // 2 + 1, n_node-1)
-    prompt1 += 'From these historical paths, give me the most popular path from ' + str(src) + ' to ' + str(dest) + '\n'
-    
-    print(prompt1)
+        evaluation_prompt += "path: " + str(path) + " freq: " + str(freq) + "\n"
+    src, dest = generate_node_pair(n_node)
+    evaluation_prompt += (
+        "From these historical paths, give me the most popular path from "
+        + str(src)
+        + " to "
+        + str(dest)
+        + "\n"
+    )
+    print(evaluation_prompt)
+    log_file.write("----------------------------------------\n")
+    log_file.write("Starting new evaluation\n")
+    log_file.write("Evaluation prompt:\n")
+    log_file.write(evaluation_prompt)
+    log_file.write("\n")
 
-    response1 = openai.ChatCompletion.create(
+    evaluation_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         # temperature=0.7,
         messages=[
             {"role": "system", "content": "Think step by step."},
-            {"role": "user", "content": prompt1},
+            {"role": "user", "content": evaluation_prompt},
         ],
     )
-    
-    print(response1.choices[0].message.content)
-    
+    print(evaluation_response.choices[0].message.content)
+    log_file.write("Evaluation response:\n")
+    log_file.write(evaluation_response.choices[0].message.content)
+    log_file.write("\n")
+
+    # wait for 1 second to avoid rate limit
     time.sleep(1)
-    
-    prompt2 = 'The following text is a result for calculating popular path from ' + str(src) + ' to ' + str(dest) + '\n'
-    prompt2 += 'Format the answer as a list of nodes, e.g. [1, 2, 3]\n'
-    prompt2 += 'Do not include anything else in your answer\n'
-    prompt2 += response1.choices[0].message.content + '\n'
-    print(prompt2)
-    
-    response2 = openai.ChatCompletion.create(
+
+    format_prompt = (
+        "The following text is a result for calculating popular path from "
+        + str(src)
+        + " to "
+        + str(dest)
+        + "\n"
+    )
+    format_prompt += "Format the answer as a list of nodes, e.g. [1, 2, 3]\n"
+    format_prompt += "Do not include anything else in your answer\n"
+    format_prompt += evaluation_response.choices[0].message.content + "\n"
+    print(format_prompt)
+    log_file.write("Formatting prompt:\n")
+    log_file.write(format_prompt)
+    log_file.write("\n")
+
+    format_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         # temperature=0.7,
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt2},
+            {"role": "user", "content": format_prompt},
         ],
     )
-    
-    print(response2.choices[0].message.content)
-    
-    rec_path = eval(response2.choices[0].message.content)   
-    all_paths = [list(path) for path in path_freq.keys()]
+    print(format_response.choices[0].message.content)
+    log_file.write("Formatting response:\n")
+    log_file.write(format_response.choices[0].message.content)
+    log_file.write("\n")
+
+    # wait for 1 second to avoid rate limit
+    time.sleep(1)
+
+    # evaluate the response
+    rec_path = eval(format_response.choices[0].message.content)
+    all_paths = [list(path) for path, freq in path_freq.items() for _ in range(freq)]
     paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
     score_f1 = get_f1_score(rec_path, paths)
     score_pairs_f1 = get_pairs_f1_score(rec_path, paths)
-    print(f'f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}')
-    csv_file.write(f'{n_node}, {n_edge}, {score_f1}, {score_pairs_f1}\n')
+    print(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}")
+    csv_file.write(f"{n_node}, {n_edge}, {score_f1}, {score_pairs_f1}\n")
+    log_file.write(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}\n")
+    log_file.write("----------------------------------------\n")
