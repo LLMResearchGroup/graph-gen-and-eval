@@ -2,6 +2,7 @@ import random
 import openai
 import os
 import time
+import re
 from dotenv import load_dotenv
 from eval import *
 from graph_gen import *
@@ -12,11 +13,16 @@ n_edges = [20, 25, 30, 40]
 evaluation_ratio = 2  # number of paths generated for each edge
 
 # necessary initialization
-csv_file = open("eval_results.csv", "w")
-csv_file.write("n_nodes, n_edges, f1_score, pairs_f1_score\n")
 load_dotenv()
 openai.api_key = os.getenv("OPENAI")
 log_file = open("log.txt", "a")
+# create csv file if doesn't exist and write header
+# open in append mode if exists
+if not os.path.exists("eval_results.csv"):
+    csv_file = open("eval_results.csv", "w")
+    csv_file.write("n_nodes, n_edges, f1_score, pairs_f1_score\n")
+else:
+    csv_file = open("eval_results.csv", "a")
 
 
 # utility functions
@@ -83,9 +89,11 @@ for n_node, n_edge in zip(n_nodes, n_edges):
         + str(dest)
         + "\n"
     )
-    format_prompt += "Format the answer as a list of nodes, e.g. [1, 2, 3]\n"
+    format_prompt += "Format the answer as a list of nodes, e.g. (1, 2, 3)\n"
     format_prompt += "Do not include anything else in your answer\n"
+    format_prompt += "Answer starts here:\n"
     format_prompt += evaluation_response.choices[0].message.content + "\n"
+    format_prompt += "Answer ends here\n"
     print(format_prompt)
     log_file.write("Formatting prompt:\n")
     log_file.write(format_prompt)
@@ -108,12 +116,20 @@ for n_node, n_edge in zip(n_nodes, n_edges):
     time.sleep(1)
 
     # evaluate the response
-    rec_path = eval(format_response.choices[0].message.content)
-    all_paths = [list(path) for path, freq in path_freq.items() for _ in range(freq)]
-    paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
-    score_f1 = get_f1_score(rec_path, paths)
-    score_pairs_f1 = get_pairs_f1_score(rec_path, paths)
-    print(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}")
-    csv_file.write(f"{n_node}, {n_edge}, {score_f1}, {score_pairs_f1}\n")
-    log_file.write(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}\n")
-    log_file.write("----------------------------------------\n")
+    format_response = format_response.choices[0].message.content
+    try :
+        rec_path = eval(format_response)
+        all_paths = [path for path, freq in path_freq.items() for _ in range(freq)]
+        paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
+        score_f1 = get_f1_score(rec_path, paths)
+        score_pairs_f1 = get_pairs_f1_score(rec_path, paths)
+        print(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}")
+        csv_file.write(f"{n_node}, {n_edge}, {score_f1}, {score_pairs_f1}\n")
+        log_file.write(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}\n")
+        log_file.write("----------------------------------------\n")
+    except Exception as e:
+        print("Invalid answer format")
+        print(e)
+        log_file.write("Invalid answer format\n")
+        continue
+        
