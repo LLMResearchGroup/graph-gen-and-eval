@@ -34,14 +34,23 @@ def f1_calculator(rec_path, relevant_paths):
         else:
             rel_path_dict[path] = 1
             
+    print('rel_path_dict', rel_path_dict)
+            
     # intersection
     intersection = 0
-    if rec_path in rel_path_dict:
-        intersection = rel_path_dict[rec_path]
+    for path in rec_path:
+        if path in rel_path_dict:
+            intersection += 1
+            rel_path_dict[path] -= 1
+            if rel_path_dict[path] == 0:
+                del rel_path_dict[path]
+    print('intersection', intersection)
     # precision
     precision = intersection / len(rec_path)
+    print('precision', precision)
     # recall
-    recall = intersection / len(relevant_paths)  
+    recall = intersection / len(relevant_paths)
+    print('recall', recall)
     
     if precision + recall == 0:
         return 0
@@ -53,19 +62,21 @@ def get_f1_score(rec_path, relevant_paths):
     
     if len(relevant_paths) == 0:
         return 0
-    return f1_calculator(rec_path, relevant_paths)
+    rec_paths = [rec_path]
+    return f1_calculator(rec_paths, relevant_paths)
 
 def get_pairs_f1_score(rec_path, relevant_paths):
     '''Returns pairs-f1 score'''
     
     # first convert them to list of pairs
     convert = lambda path: [(path[i], path[i+1]) for i in range(len(path)-1)]
+    rec_path_pairs = convert(rec_path)
     rel_paths_pairs = [convert(path) for path in relevant_paths]
     rel_paths_pairs = [item for sublist in rel_paths_pairs for item in sublist]
 
     if len(rel_paths_pairs) == 0:
         return 0
-    return f1_calculator(rec_path, rel_paths_pairs)
+    return f1_calculator(rec_path_pairs, rel_paths_pairs)
 
 # rec_path = (10, 11)
 # all_paths = read_paths('processed_data/Edin.txt')

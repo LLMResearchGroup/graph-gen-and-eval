@@ -8,8 +8,10 @@ from eval import *
 from graph_gen import *
 
 # evaluation parameters
-n_nodes = [10, 12, 13, 17]
-n_edges = [20, 25, 30, 40]
+# n_nodes = [10, 12, 13, 17]
+# n_edges = [20, 25, 30, 40]
+n_nodes = [10]
+n_edges = [20]
 evaluation_ratio = 2  # number of paths generated for each edge
 
 # necessary initialization
@@ -59,6 +61,9 @@ for n_node, n_edge in zip(n_nodes, n_edges):
         + str(dest)
         + "\n"
     )
+    evaluation_prompt += "You must give an answer in the following format:\n"
+    evaluation_prompt += "(1, 2, 3)\n"
+    evaluation_prompt += "No answer is not allowed\n"
     print(evaluation_prompt)
     log_file.write("----------------------------------------\n")
     log_file.write("Starting new evaluation\n")
@@ -68,7 +73,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
 
     evaluation_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        # temperature=0.7,
+        temperature=0.2,
         messages=[
             {"role": "system", "content": "Think step by step."},
             {"role": "user", "content": evaluation_prompt},
