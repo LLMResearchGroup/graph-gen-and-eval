@@ -146,32 +146,68 @@ def generate_randomly_distributed_path(
         raise ValueError("Sample size must be larger than 0")
 
     # Generate random frequencies and path lengths from a normal distribution
-    if distribution == ProbabilityDistribution.Normal:
-        path_frequencies = [
-            max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
-        ]
-        path_lengths = [
-            max(1, int(round(random.normalvariate(5, 2)))) for _ in range(sample_size)
-        ]
-    elif distribution == ProbabilityDistribution.Uniform:
-        path_frequencies = [
-            max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
-        ]
-        path_lengths = [
-            max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
-        ]
+    sources = [random.choice(list(Graph.nodes())) for _ in range(sample_size)]
+    destinations = [random.choice(list(Graph.nodes())) for _ in range(sample_size)]
+
+    match distribution:
+        case ProbabilityDistribution.Normal:
+            path_frequencies = [
+                max(1, int(round(random.normalvariate(5, 2))))
+                for _ in range(sample_size)
+            ]
+        case ProbabilityDistribution.Uniform:
+            path_frequencies = [
+                max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
+            ]
+        case _:
+            raise ValueError("Distribution not supported")
 
     # Generate random paths
     return {
-        tuple(
-            list(
-                networkx.generate_random_paths(
-                    Graph, sample_size=1, path_length=path_lengths[i]
-                )
-            )[0]
-        ): path_frequencies[i]
+        tuple(generate_path(Graph, sources[i], destinations[i])): path_frequencies[i]
         for i in range(sample_size)
     }
+
+
+def generate_path(
+    Graph: networkx.classes.graph.Graph, source: int, destination: int
+) -> list:
+    if (
+        not isinstance(Graph, networkx.classes.graph.Graph)
+        or not isinstance(source, int)
+        or not isinstance(destination, int)
+    ):
+        raise TypeError(
+            "Graph must be a networkx.classes.graph.Graph and source and destination must be int"
+        )
+
+    # Check if the graph is connected
+    if not networkx.is_connected(Graph):
+        raise ValueError("Graph must be connected")
+
+    # Check if the source and destination are valid
+    if source < 0 or source >= len(Graph.nodes()):
+        raise ValueError("Source must be within the range of the number of nodes")
+
+    if source == destination:
+        return [source]
+    
+    try:
+        # Get all simple paths between source and destination
+        all_paths = list(
+            networkx.all_simple_paths(Graph, source=source, target=destination)
+        )
+
+        # Choose a random path from the list of all paths
+        if all_paths:
+            random_path = random.choice(all_paths)
+            return random_path
+        else:
+            # If there are no paths, return an empty list
+            return []
+    except networkx.NodeNotFound:
+        # If the source or destination node does not exist in the graph, handle the exception
+        return []
 
 
 # test
@@ -187,7 +223,6 @@ def generate_randomly_distributed_path(
 # path_freq = generate_randomly_distributed_path(Graph, 20)
 # all_paths = [list(path) for path, freq in path_freq.items() for _ in range(freq)]
 # print(all_paths)
-
 
 __all__ = [
     "generate_graph",
