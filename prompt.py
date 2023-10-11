@@ -8,10 +8,10 @@ from eval import *
 from graph_gen import *
 
 # evaluation parameters
-n_nodes = [10, 12, 13, 17]
-n_edges = [20, 25, 30, 40]
-# n_nodes = [5]
-# n_edges = [7]
+# n_nodes = [10, 15, 20]
+# n_edges = [20, 30, 40]
+n_nodes = [5]
+n_edges = [7]
 evaluation_ratio = 2  # number of paths generated for each edge
 
 # necessary initialization
@@ -79,6 +79,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
             {"role": "user", "content": evaluation_prompt},
         ],
     )
+    # print(evaluation_response)
     print(evaluation_response.choices[0].message.content)
     log_file.write("Evaluation response:\n")
     log_file.write(evaluation_response.choices[0].message.content)
@@ -96,13 +97,13 @@ for n_node, n_edge in zip(n_nodes, n_edges):
     )
     format_prompt += "Format the answer as a list of nodes, e.g. (1, 2, 3)\n"
     format_prompt += "Do not include anything else in your answer\n"
+    log_file.write("Formatting prompt:\n")
+    log_file.write(format_prompt)
+    log_file.write("\n")
     format_prompt += "Answer starts here:\n"
     format_prompt += evaluation_response.choices[0].message.content + "\n"
     format_prompt += "Answer ends here\n"
     print(format_prompt)
-    log_file.write("Formatting prompt:\n")
-    log_file.write(format_prompt)
-    log_file.write("\n")
 
     format_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",

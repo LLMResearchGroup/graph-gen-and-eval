@@ -84,12 +84,12 @@ def get_pairs_f1_score(rec_path, relevant_paths):
         return 0
     return f1_calculator(rec_path_pairs, rel_paths_pairs)
 
-rec_path = (10, 11)
-all_paths = read_paths('processed_data/Edin.txt')
-relevant_paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
-score_f1 = get_f1_score(rec_path, relevant_paths)
-print('score_f1', score_f1)
-score_pairs_f1 = get_pairs_f1_score(rec_path, relevant_paths)
-print('score_pairs_f1', score_pairs_f1)
+# rec_path = (10, 11)
+# all_paths = read_paths('processed_data/Edin.txt')
+# relevant_paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
+# score_f1 = get_f1_score(rec_path, relevant_paths)
+# print('score_f1', score_f1)
+# score_pairs_f1 = get_pairs_f1_score(rec_path, relevant_paths)
+# print('score_pairs_f1', score_pairs_f1)
 
 __all__ = ['get_f1_score', 'get_pairs_f1_score', 'read_paths', 'get_paths_and_subpaths']
