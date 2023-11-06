@@ -64,11 +64,12 @@ def f1_calculator(rec_paths, ground_paths):
 
 def get_f1_score(rec_path, relevant_paths):
     '''Returns f1 score'''
+
+    rec_paths = [poi for poi in rec_path]
+    relevant_paths = [poi for path in relevant_paths for poi in path]
     
     if len(relevant_paths) == 0:
         return 0
-    rec_paths = [poi for poi in rec_path]
-    relevant_paths = [poi for path in relevant_paths for poi in path]
     return f1_calculator(rec_paths, relevant_paths)
 
 def get_pairs_f1_score(rec_path, relevant_paths):
@@ -77,8 +78,8 @@ def get_pairs_f1_score(rec_path, relevant_paths):
     # first convert them to list of pairs
     convert = lambda path: [(path[i], path[i+1]) for i in range(len(path)-1)]
     rec_path_pairs = convert(rec_path)
-    rel_paths_pairs = [convert(path) for path in relevant_paths]
-    rel_paths_pairs = [item for sublist in rel_paths_pairs for item in sublist]
+    rel_paths_pairs = [convert(path) for path in relevant_paths] # list of list of pairs
+    rel_paths_pairs = [item for sublist in rel_paths_pairs for item in sublist] # flatten
 
     if len(rel_paths_pairs) == 0:
         return 0

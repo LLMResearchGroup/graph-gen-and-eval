@@ -163,11 +163,14 @@ def generate_randomly_distributed_path(
             raise ValueError("Distribution not supported")
 
     # Generate random paths
-    return {
-        tuple(generate_path(Graph, sources[i], destinations[i])): path_frequencies[i]
-        for i in range(sample_size)
-    }
-
+    path_freq = {}
+    for i in range(sample_size):
+        path = generate_path(Graph, sources[i], destinations[i])
+        if len(path) < 2:
+            i = i - 1
+            continue
+        path_freq[tuple(path)] = path_frequencies[i]
+    return path_freq
 
 def generate_path(
     Graph: networkx.classes.graph.Graph, source: int, destination: int
