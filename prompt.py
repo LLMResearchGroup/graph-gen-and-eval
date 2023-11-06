@@ -2,10 +2,13 @@ import random
 import openai
 import os
 import time
-import re
+import json
 from dotenv import load_dotenv
 from eval import *
 from graph_gen import *
+import datetime
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 # evaluation parameters
 # n_nodes = [10, 15, 20]
@@ -13,6 +16,8 @@ from graph_gen import *
 n_nodes = [5]
 n_edges = [7]
 evaluation_ratio = 2  # number of paths generated for each edge
+temperature = 0.2 # temperature for the model
+chatgpt_version = "gpt-3.5-turbo_unspecified_version"
 
 # necessary initialization
 load_dotenv()
@@ -25,6 +30,7 @@ if not os.path.exists("eval_results.csv"):
     csv_file.write("n_nodes, n_edges, f1_score, pairs_f1_score\n")
 else:
     csv_file = open("eval_results.csv", "a")
+json_file = open("log.json", "a")
 
 
 # utility functions
@@ -43,6 +49,22 @@ def generate_node_pair(number_of_nodes: int) -> tuple:
         pair = (random.randint(0, number_of_nodes), random.randint(0, number_of_nodes))
     return pair
 
+def insert_json_to_mongodb(json_data, mongodb_uri, database_name, collection_name):
+    # Connect to MongoDB server
+    client = MongoClient(mongodb_uri, server_api=ServerApi('1'))
+
+    # Get database and collection
+    db = client[database_name]
+    collection = db[collection_name]
+
+    try:
+        # Insert data into collection
+        collection.insert_one(json_data)
+    except Exception as e:
+        print("Error inserting data into MongoDB: {0}".format(e))
+
+    # Close connection
+    client.close()
 
 for n_node, n_edge in zip(n_nodes, n_edges):
     graph = generate_graph(n_node, n_edge)
@@ -63,7 +85,8 @@ for n_node, n_edge in zip(n_nodes, n_edges):
     )
     evaluation_prompt += "You must give an answer in the following format:\n"
     evaluation_prompt += "(1, 2, 3)\n"
-    evaluation_prompt += "No answer is not allowed, multiple answer is also not allowed\n"
+    evaluation_prompt += "Not giving an answer is not allowed, multiple answer is also not allowed\n"
+    evaluation_prompt += "You must give one and only one answer\n"
     print(evaluation_prompt)
     log_file.write("----------------------------------------\n")
     log_file.write("Starting new evaluation\n")
@@ -73,7 +96,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
 
     evaluation_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        temperature=0.2,
+        temperature=temperature,
         messages=[
             {"role": "system", "content": "Think step by step."},
             {"role": "user", "content": evaluation_prompt},
@@ -107,7 +130,6 @@ for n_node, n_edge in zip(n_nodes, n_edges):
 
     format_response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        # temperature=0.7,
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": format_prompt},
@@ -133,9 +155,39 @@ for n_node, n_edge in zip(n_nodes, n_edges):
         csv_file.write(f"{n_node}, {n_edge}, {score_f1}, {score_pairs_f1}\n")
         log_file.write(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}\n")
         log_file.write("----------------------------------------\n")
+        
+        json_data = {
+            "node_number": n_node,
+            "edge_number": n_edge,
+            "path_number": len(path_freq),
+            "temperature": temperature,
+            "version": chatgpt_version,
+            "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "trajectory_list": [
+                {"path": path, "freq": freq} for path, freq in path_freq.items()
+            ],
+            "graph_description": describe_graph(graph, GraphPrompt.Build_A_Graph),
+            "source": src,
+            "destination": dest,
+            "prompt1": evaluation_prompt,
+            "prompt2": format_prompt,
+            "response1": evaluation_response.choices[0].message.content,
+            "response2": format_response.choices[0].message.content,
+            "f1_score": score_f1,
+            "f1_pair_score": score_pairs_f1,
+        }
+        json_file.write(json_data)
+        
+        load_dotenv()
+        uri = os.getenv("MONGOURI")
+        insert_json_to_mongodb(json_data, uri, "DemoGraph", "Alpha")
+        
     except Exception as e:
         print("Invalid answer format")
         print(e)
         log_file.write("Invalid answer format\n")
         continue
         
+log_file.close()
+csv_file.close()
+json_file.close()

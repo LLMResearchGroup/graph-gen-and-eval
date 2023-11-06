@@ -1,16 +1,21 @@
-import pymongo
-import json
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+import os
+from dotenv import load_dotenv
 
 def insert_json_to_mongodb(json_data, mongodb_uri, database_name, collection_name):
     # Connect to MongoDB server
-    client = pymongo.MongoClient(mongodb_uri)
+    client = MongoClient(mongodb_uri, server_api=ServerApi('1'))
 
     # Get database and collection
     db = client[database_name]
     collection = db[collection_name]
 
-    # Insert data into collection
-    collection.insert_one(json_data)
+    try:
+        # Insert data into collection
+        collection.insert_one(json_data)
+    except Exception as e:
+        print("Error inserting data into MongoDB: {0}".format(e))
 
     # Close connection
     client.close()
@@ -37,7 +42,9 @@ data = {
     "f1_score": 0.85,
     "f1_pair_score": 0.75
 }
+# temperature
+# chatgpt version
 
-
-
-
+load_dotenv()
+uri = os.getenv("MONGOURI")
+insert_json_to_mongodb(data, uri, "DemoGraph", "Alpha")

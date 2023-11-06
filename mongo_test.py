@@ -17,3 +17,7 @@ try:
     print("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     print(e)
+finally:
+    # Close the connection to the server
+    print("Closing connection to MongoDB")
+    client.close()
