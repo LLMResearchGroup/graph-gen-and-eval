@@ -1,0 +1,2 @@
+node_number,edge_number,path_number,f1_score,f1_pair_score
+10,20,5,0.85,0.75
