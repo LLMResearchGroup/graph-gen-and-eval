@@ -11,6 +11,7 @@ def insert_json_to_mongodb(json_data):
     
     # Connect to MongoDB server
     client = MongoClient(mongodb_uri, server_api=ServerApi('1'))
+    print(client)
 
     # Get database and collection
     db = client[database_name]

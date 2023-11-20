@@ -9,10 +9,10 @@ from mongo import insert_json_to_mongodb
 # evaluation parameters
 # n_nodes = [5, 7, 10, 12, 15]
 # n_edges = [7, 12, 17, 20, 25]
-n_nodes = [15]
-n_edges = [25]
-temperatures = [0]
-n_paths = [15]
+n_nodes = [15,20,25]
+n_edges = [30,40,50]
+temperatures = [0.1, 0.3, 0.5, 0.7, 0.9]
+n_paths = [40, 45, 50, 55, 60]
 chatgpt_version = "gpt-3.5-turbo-1106"
 n_iter = 1  # number of iterations for each graph
 
@@ -58,6 +58,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                 log_file.write("chatgpt_version: " + str(chatgpt_version) + "\n")
                 log_file.write("iter: " + str(iter1) + "\n")
                 
+                # generate graph and paths
                 graph = generate_graph(n_node, n_edge)
                 evaluation_prompt = describe_graph(graph, GraphPrompt.Build_A_Graph) + "\n"
                 evaluation_prompt += "Now, I will give you some historical paths.\n"
@@ -66,6 +67,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                 )
                 for path, freq in path_freq.items():
                     evaluation_prompt += "path: " + str(path) + " freq: " + str(freq) + "\n"
+                
                     
                 for iter2 in range(n_iter):
                     src, dest = generate_node_pair(n_node)
@@ -76,6 +78,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     evaluation_prompt += "(1, 2, 3)\n"
                     evaluation_prompt += "Not giving an answer is not allowed, multiple answer is also not allowed\n"
                     evaluation_prompt += "You must give one and only one answer\n"
+                    print("***Evaluation prompt:")
                     print(evaluation_prompt)
                     log_file.write("Evaluation prompt:\n")
                     log_file.write(evaluation_prompt)
@@ -98,6 +101,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                             
                     # print(evaluation_response)
                     evaluation_response = evaluation_response.choices[0].message.content
+                    print("***Evaluation response:")
                     print(evaluation_response)
                     log_file.write("Evaluation response:\n")
                     log_file.write(evaluation_response)
@@ -115,7 +119,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     log_file.write(format_prompt)
                     log_file.write("\n")
                     format_prompt += "Answer starts here:\n"
-                    format_prompt += evaluation_response.choices[0].message.content + "\n"
+                    format_prompt += evaluation_response + "\n"
                     format_prompt += "Answer ends here\n"
 
                     try:
@@ -154,6 +158,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     paths = get_paths_and_subpaths(rec_path[0], rec_path[-1], all_paths)
                     score_f1 = get_f1_score(rec_path, paths)
                     score_pairs_f1 = get_pairs_f1_score(rec_path, paths)
+                    print("***Evaluation result:")
                     print(f"n_node: {n_node}, n_edge: {n_edge}, n_path: {n_path}, temperature: {temperature}, f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}")
                     csv_file.write(f"{n_node}, {n_edge}, {n_path}, {temperature}, {score_f1}, {score_pairs_f1}\n")
                     log_file.write(f"f1 score: {score_f1}, pairs f1 score: {score_pairs_f1}\n")
