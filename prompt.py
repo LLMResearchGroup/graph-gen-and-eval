@@ -7,14 +7,14 @@ from pymongo.server_api import ServerApi
 from mongo import insert_json_to_mongodb
 
 # evaluation parameters
-# n_nodes = [5, 7, 10, 12, 15]
-# n_edges = [7, 12, 17, 20, 25]
-n_nodes = [15]
-n_edges = [25]
-temperatures = [0]
-n_paths = [15]
+n_nodes = [5, 7, 10, 12, 15]
+n_edges = [7, 12, 17, 20, 25]
+# n_nodes = [15]
+# n_edges = [25]
+temperatures = [0, 0.1, 0.2, 0.3]
+n_paths = [7, 12, 15, 30, 50, 80]
 chatgpt_version = "gpt-3.5-turbo-1106"
-n_iter = 1  # number of iterations for each graph
+n_iter = 2  # number of iterations for each graph
 
 # necessary initialization
 load_dotenv()
@@ -115,7 +115,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     log_file.write(format_prompt)
                     log_file.write("\n")
                     format_prompt += "Answer starts here:\n"
-                    format_prompt += evaluation_response.choices[0].message.content + "\n"
+                    format_prompt += evaluation_response + "\n"
                     format_prompt += "Answer ends here\n"
 
                     try:

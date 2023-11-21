@@ -149,18 +149,18 @@ def generate_randomly_distributed_path(
     sources = [random.choice(list(Graph.nodes())) for _ in range(sample_size)]
     destinations = [random.choice(list(Graph.nodes())) for _ in range(sample_size)]
 
-    match distribution:
-        case ProbabilityDistribution.Normal:
-            path_frequencies = [
-                max(1, int(round(random.normalvariate(5, 2))))
-                for _ in range(sample_size)
-            ]
-        case ProbabilityDistribution.Uniform:
-            path_frequencies = [
-                max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
-            ]
-        case _:
-            raise ValueError("Distribution not supported")
+    # match distribution:
+    #     case ProbabilityDistribution.Normal:
+    path_frequencies = [
+        max(1, int(round(random.normalvariate(5, 2))))
+        for _ in range(sample_size)
+    ]
+        # case ProbabilityDistribution.Uniform:
+        #     path_frequencies = [
+        #         max(1, int(round(random.uniform(1, 10)))) for _ in range(sample_size)
+        #     ]
+        # case _:
+        #     raise ValueError("Distribution not supported")
 
     # Generate random paths
     path_freq = {}
