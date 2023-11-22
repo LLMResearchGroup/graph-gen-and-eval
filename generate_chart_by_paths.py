@@ -17,7 +17,7 @@ collection = db["Alpha"]
 data = []
 
 # Query the collection to retrieve the necessary fields
-cursor = collection.find({}, {"path_number": 1, "f1_score": 1, "f1_pair_score": 1, "_id": 0})
+cursor = collection.find({"date": {"$gte": "2023-11-20 22:00:00"}}, {"path_number": 1, "f1_score": 1, "f1_pair_score": 1, "_id": 0})
 
 # Iterate through the documents and populate the data list
 for doc in cursor:

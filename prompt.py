@@ -167,7 +167,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     json_data = {
                         "node_number": n_node,
                         "edge_number": n_edge,
-                        "path_number": len(path_freq),
+                        "path_number": n_path,
                         # we don't control path length yet
                         "avg_path_length": sum([len(path) for path in path_freq.keys()]) / len(path_freq) if len(path_freq) > 0 else -1,
                         "temperature": temperature,

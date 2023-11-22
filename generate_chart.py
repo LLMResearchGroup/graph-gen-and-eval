@@ -17,11 +17,11 @@ collection = db["Alpha"]
 data = []
 
 # Query the collection to retrieve the necessary fields
-cursor = collection.find({"node_number": {"$gte": 5}, "path_number": {"$gte": 5}, "date": {"$gte": "2023-11-07 09:00:00"}},
+cursor = collection.find({"node_number": {"$gte": 5}, "date": {"$gte": "2023-11-20 22:00:00"}},
                          {"node_number": 1, "edge_number": 1, "path_number": 1, "f1_score": 1, "f1_pair_score": 1, "_id": 0})
 
 # Print number of documents retrieved
-print(cursor.count(), "documents retrieved.")
+# print(cursor.count(), "documents retrieved.")
 
 # Iterate through the documents and populate the data list
 for doc in cursor:
@@ -35,8 +35,8 @@ grouped = df.groupby(["node_number", "edge_number"])
 
 # Iterate through the grouped data and create CSV files and graphs for each combination
 for (node_number, edge_number), group_data in grouped:
-    filename = f"generated_results/node_{node_number}_edge_{edge_number}_data.csv"
-    group_data.to_csv(filename, index=False)
+    # filename = f"generated_results/node_{node_number}_edge_{edge_number}_data.csv"
+    # group_data.to_csv(filename, index=False)
 
     # Create a bar graph "f1_score" and "f1_pair_score" with "path_number" on the x-axis
     # sort in ascending path number
@@ -44,11 +44,15 @@ for (node_number, edge_number), group_data in grouped:
     # create ranges of 5
     min_path_number = group_data["path_number"].min()
     max_path_number = group_data["path_number"].max()
-    bins = np.arange(min_path_number, max_path_number + 10, 10)
+    gap = (max_path_number - min_path_number)//4
+    bins = np.arange(min_path_number, max_path_number + gap, gap)
     # create a new column in the DataFrame that specifies the bin for each path number
-    group_data["path_number_range"] = pd.cut(group_data["path_number"], bins=bins, labels=[f"{i}-{i+9}" for i in range(min_path_number, max_path_number, 10)])
+    group_data["path_number_range"] = pd.cut(group_data["path_number"], bins=bins, labels=[f"{i}-{i+gap-1}" for i in range(min_path_number, max_path_number, gap)])
     # group the data by path number range and calculate the average scores
     avg_scores = group_data.groupby("path_number_range")[["f1_score", "f1_pair_score"]].mean()
+
+    # avg_scores = group_data.groupby("path_number")[["f1_score", "f1_pair_score"]].mean()
+
     # create a bar chart for the average scores
     plt.figure(figsize=(10, 8))
     avg_scores.plot(kind="bar")
@@ -74,6 +78,8 @@ df["path_number_range"] = pd.cut(df["path_number"], bins=bins, labels=[f"{i}-{i+
 
 # Group the data by path number range and calculate the average scores
 avg_scores = df.groupby("path_number_range")[["f1_score", "f1_pair_score"]].mean()
+
+# avg_scores = df.groupby("path_number")[["f1_score", "f1_pair_score"]].mean()
 
 # Create a bar chart for the average scores
 plt.figure(figsize=(10, 8))
