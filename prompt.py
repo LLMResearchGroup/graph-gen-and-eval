@@ -7,14 +7,12 @@ from pymongo.server_api import ServerApi
 from mongo import insert_json_to_mongodb
 
 # evaluation parameters
-n_nodes = [5, 7, 10, 12, 15]
-n_edges = [7, 12, 17, 20, 25]
-# n_nodes = [15]
-# n_edges = [25]
-temperatures = [0, 0.1, 0.2, 0.3]
-n_paths = [7, 12, 15, 30, 50, 80]
+n_nodes = [7, 15, 25, 40]
+n_edges = [10, 22, 40, 60]
+temperatures = [0, 0.3, 0.5, 0.7, 1]
+n_paths = [25, 50, 75, 100, 150, 200, 300, 500]
 chatgpt_version = "gpt-3.5-turbo-1106"
-n_iter = 2  # number of iterations for each graph
+n_iter = 10  # number of iterations for each graph
 
 # necessary initialization
 load_dotenv()
@@ -168,7 +166,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                         "node_number": n_node,
                         "edge_number": n_edge,
                         "path_number": n_path,
-                        # we don't control path length yet
+                        # we don't control path length
                         "avg_path_length": sum([len(path) for path in path_freq.keys()]) / len(path_freq) if len(path_freq) > 0 else -1,
                         "temperature": temperature,
                         "version": chatgpt_version,
