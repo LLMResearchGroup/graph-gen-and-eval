@@ -64,7 +64,7 @@ for n_node, n_edge in zip(n_nodes, n_edges):
                     graph, n_path, ProbabilityDistribution.Normal
                 )
                 for path, freq in path_freq.items():
-                    evaluation_prompt += "path: " + str(path) + " freq: " + str(freq) + "\n"
+                    evaluation_prompt += 0 + " freq: " + str(freq) + "\n"
                 
                     
                 for iter2 in range(n_iter):
